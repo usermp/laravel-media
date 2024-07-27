@@ -13,15 +13,12 @@ class MediaController extends Controller
         $validated = $request->validated();
 
         $file = $request->file('media');
+        
         $path = $file->storeAs('media', $file->getClientOriginalName(), config('laravelMedia.storage_disk'));
 
-        $media = Media::create([
-            'title' => $request->title,
-            'alt' => $request->alt,
-            'user_id' => $request->user_id,
-            'description' => $request->description,
-            'path' => $path,
-        ]);
+        $validated['path'] = $path;
+
+        $media = Media::create($validated);
 
         return response()->json(['media' => $media], 201);
     }
