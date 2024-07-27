@@ -1,6 +1,6 @@
 {
     "name": "usermp/laravel-media",
-    "description": "TEST TEST",
+    "description": "A Laravel package for managing media uploads and storage. Supports images, videos, audio, and files with built-in validation and customizable storage. Easy integration and API endpoints for efficient media management.",
     "license": "MIT",
     "autoload": {
         "psr-4": {
