@@ -16,7 +16,7 @@ class MediaServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__. '/routes/api.php');
         $this->loadMigrationsFrom(__DIR__.'/../migrations');
         $this->publishes([
-            __DIR__.'/../config/media.php' => config_path('laravelMedia.php'),
+            __DIR__.'/../config/media.php' => config_path('media.php'),
         ]);
     }
 
@@ -27,6 +27,6 @@ class MediaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/laravelMedia.php', 'laravelMedia');
+        $this->mergeConfigFrom(__DIR__.'/../config/media.php', 'media');
     }
 }

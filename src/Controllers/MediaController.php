@@ -19,7 +19,7 @@ class MediaController extends Controller
 
         $file = $request->file('media');
 
-        $path = $file->storeAs('media', $file->getClientOriginalName(), config('laravelMedia.storage_disk'));
+        $path = $file->storeAs('media', $file->getClientOriginalName(), config('laravelMedia.storage_disk') . $validated['directory_name']);
 
         $validated['path'] = $path;
 
@@ -34,7 +34,7 @@ class MediaController extends Controller
 
         $directoryName = $validated['directory_name'];
 
-        $directoryPath = 'media/' . $directoryName;
+        $directoryPath = config('laravelMedia.storage_disk') . $directoryName;
 
         if (!file_exists($directoryPath)) {
             mkdir($directoryPath, 0777, true);

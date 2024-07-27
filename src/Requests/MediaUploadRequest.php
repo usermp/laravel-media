@@ -24,10 +24,11 @@ class MediaUploadRequest extends FormRequest
     public function rules()
     {
         return [
-            'media'        => 'required|file|max:10000000',
-            'title'        => 'nullable|string|max:255',
-            'alt'          => 'nullable|string|max:255',
-            'description'  => 'nullable|string',
+            'media'          => 'required|file|max:10000000',
+            'directory_name' => 'required|string',
+            'title'          => 'nullable|string|max:255',
+            'alt'            => 'nullable|string|max:255',
+            'description'    => 'nullable|string',
         ];
     }
 }
