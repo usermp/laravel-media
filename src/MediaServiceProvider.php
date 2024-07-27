@@ -26,6 +26,6 @@ class MediaServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/laravelMedia.php', 'media');
+        $this->mergeConfigFrom(__DIR__.'/../config/laravelMedia.php', 'laravelMedia');
     }
 }
