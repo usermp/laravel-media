@@ -2,9 +2,10 @@
 
 namespace Usermp\LaravelMedia\Controllers;
 
-use Usermp\LaravelMedia\Requests\MediaUploadRequest;
-use Usermp\LaravelMedia\Models\Media;
 use Illuminate\Routing\Controller;
+use Usermp\LaravelMedia\Models\Media;
+use Usermp\LaravelMedia\Requests\DirectoryRequest;
+use Usermp\LaravelMedia\Requests\MediaUploadRequest;
 
 class MediaController extends Controller
 {
@@ -25,5 +26,20 @@ class MediaController extends Controller
         $media = Media::create($validated);
 
         return response()->json(['media' => $media], 201);
+    }
+
+    public function directory(DirectoryRequest $request)
+    {
+        $validated = $request->validated();
+
+        $directoryName = $validated['directory_name'];
+
+        $directoryPath = 'media/' . $directoryName;
+
+        if (!file_exists($directoryPath)) {
+            mkdir($directoryPath, 0777, true);
+        }
+
+        return response()->json(['message' => 'Directory created successfully'], 201);
     }
 }
