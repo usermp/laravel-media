@@ -1,6 +1,6 @@
 <?php
 
-namespace MyVendor\LaravelMedia\Controllers;
+namespace Usermp\LaravelMedia\Controllers;
 
 use Usermp\LaravelMedia\Requests\MediaUploadRequest;
 use Usermp\LaravelMedia\Models\Media;
