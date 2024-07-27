@@ -8,6 +8,10 @@ use Illuminate\Routing\Controller;
 
 class MediaController extends Controller
 {
+    public function index()
+    {
+        return 
+    }
     public function upload(MediaUploadRequest $request)
     {
         $validated = $request->validated();

@@ -15,6 +15,7 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "illuminate/support": "*"
+        "illuminate/support": "*",
+        "sentry/sentry-laravel": "*"
     }
 }
