@@ -10,14 +10,14 @@ class MediaController extends Controller
 {
     public function index()
     {
-        return 
+        return Media::find(1);
     }
     public function upload(MediaUploadRequest $request)
     {
         $validated = $request->validated();
 
         $file = $request->file('media');
-        
+
         $path = $file->storeAs('media', $file->getClientOriginalName(), config('laravelMedia.storage_disk'));
 
         $validated['path'] = $path;

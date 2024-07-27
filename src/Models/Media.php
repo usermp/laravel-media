@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace  Usermp\LaravelMedia\Models;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +11,7 @@ use Usermp\LaravelFilter\Traits\Filterable;
 
 class Media extends Model
 {
-    use HasFactory, Notifiable, SoftDeletes, Filterable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

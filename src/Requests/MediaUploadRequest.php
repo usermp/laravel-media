@@ -24,7 +24,7 @@ class MediaUploadRequest extends FormRequest
     public function rules()
     {
         return [
-            'media'        => 'required|file|max:' . config('media.max_upload_size'),
+            'media'        => 'required|file|max:10000000',
             'title'        => 'nullable|string|max:255',
             'alt'          => 'nullable|string|max:255',
             'description'  => 'nullable|string',
