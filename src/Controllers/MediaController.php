@@ -5,8 +5,10 @@ namespace Usermp\LaravelMedia\Controllers;
 use Illuminate\Routing\Controller;
 use Usermp\LaravelMedia\Models\Media;
 use Illuminate\Support\Facades\Storage;
+use Usermp\LaravelMedia\Services\Response;
 use Usermp\LaravelMedia\Requests\DirectoryRequest;
 use Usermp\LaravelMedia\Requests\MediaUploadRequest;
+use Usermp\LaravelMedia\Services\Constants;
 
 class MediaController extends Controller
 {
@@ -17,8 +19,43 @@ class MediaController extends Controller
      */
     public function index()
     {
-        // Instead of returning a single media item, return a collection of all media
-        return Media::all();
+        // Retrieve the 'path' query parameter from the request
+        $path = request()->query('path');
+
+        // If no path is provided, return all media records
+        if (empty($path)) {
+            $media = Media::all();
+        } else {
+            // Use LIKE to find records that match the provided path
+            $media = Media::where('path', 'LIKE', '%' . $path . '%')->get();
+        }
+
+        // Separate folders and files
+        $folders = [];
+        $files = [];
+
+        foreach ($media as $item) {
+            $explode = explode("/", $item->path);
+            $file = end($explode);
+            unset($explode[count($explode) - 1]); // Remove the file name from the path
+
+            // Rebuild the folder path
+            $folderPath = implode("/", $explode);
+
+            // Check if the current item is a file or a folder
+            if ($folderPath === $path) {
+                $files[] = $item; // It's a file in the current path
+            } elseif (strpos($folderPath, $path) === 0) {
+                // It's a folder under the current path
+                $folders[] = $folderPath;
+            }
+        }
+
+        // Remove duplicates from folders
+        $folders = array_unique(array_values($folders));
+
+        // Return the media records as a JSON response
+        return response()->json(['media' => ['folders' => $folders, 'files' => $files,]], 200);
     }
 
     /**
