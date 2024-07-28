@@ -15,7 +15,6 @@ class MediaController extends Controller
     /**
      * Display a listing of the media.
      *
-     * @return \Illuminate\Http\Response
      */
     public function index()
     {
@@ -55,7 +54,7 @@ class MediaController extends Controller
         $folders = array_unique(array_values($folders));
 
         // Return the media records as a JSON response
-        return response()->json(['media' => ['folders' => $folders, 'files' => $files,]], 200);
+        return Response::success(Constants::SUCCESS,['folders' => $folders, 'files' => $files]);
     }
 
     /**
@@ -88,7 +87,7 @@ class MediaController extends Controller
 
         $media = Media::create($validated);
 
-        return response()->json(['media' => $media], 201);
+        return Response::success(Constants::SUCCESS, $media);
     }
 
     /**
@@ -111,6 +110,6 @@ class MediaController extends Controller
             $disk->makeDirectory($directoryName, 0777, true);
         }
 
-        return response()->json(['message' => 'Directory created successfully'], 201);
+        return Response::success('Directory created successfully',[]);
     }
 }
