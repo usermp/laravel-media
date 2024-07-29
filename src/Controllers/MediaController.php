@@ -15,46 +15,22 @@ class MediaController extends Controller
     /**
      * Display a listing of the media.
      *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        // Retrieve the 'path' query parameter from the request
-        $path = request()->query('path');
+        $path = request()->query('path', '/');
+        $media = $this->getMediaByPath($path);
 
-        // If no path is provided, return all media records
-        if (empty($path)) {
-            $media = Media::all();
-        } else {
-            // Use LIKE to find records that match the provided path
-            $media = Media::where('path', 'LIKE', '%' . $path . '%')->get();
-        }
+        // Ensure the path ends with a '/'
+        $path = rtrim($path, '/') . '/';
 
-        // Separate folders and files
-        $folders = [];
-        $files = [];
+        [$folders, $files] = $this->separateFoldersAndFiles($media, $path);
 
-        foreach ($media as $item) {
-            $explode = explode("/", $item->path);
-            $file = end($explode);
-            unset($explode[count($explode) - 1]); // Remove the file name from the path
-
-            // Rebuild the folder path
-            $folderPath = implode("/", $explode);
-
-            // Check if the current item is a file or a folder
-            if ($folderPath === $path) {
-                $files[] = $item; // It's a file in the current path
-            } elseif (strpos($folderPath, $path) === 0) {
-                // It's a folder under the current path
-                $folders[] = $folderPath;
-            }
-        }
-
-        // Remove duplicates from folders
-        $folders = array_unique(array_values($folders));
-
-        // Return the media records as a JSON response
-        return Response::success(Constants::SUCCESS,['folders' => $folders, 'files' => $files]);
+        return Response::success(Constants::SUCCESS, [
+            'folders' => array_values(array_unique($folders)),
+            'files' => $files,
+        ]);
     }
 
     /**
@@ -66,23 +42,13 @@ class MediaController extends Controller
     public function upload(MediaUploadRequest $request)
     {
         $validated = $request->validated();
-
         $file = $request->file('media');
-        // Get the disk instance
         $disk = Storage::disk(config('media.storage_disk'));
-
-        // Build the directory path
         $directoryPath = $validated['directory_name'];
 
-        // Check if the directory exists, and create it if not
-        if (!$disk->exists($directoryPath)) {
-            $disk->makeDirectory($directoryPath, 0777, true);
-        }
+        $this->ensureDirectoryExists($disk, $directoryPath);
 
-
-        // Use the `store` method to generate a unique filename
         $path = $file->store($directoryPath, config('media.storage_disk'));
-
         $validated['path'] = $path;
 
         $media = Media::create($validated);
@@ -99,17 +65,85 @@ class MediaController extends Controller
     public function directory(DirectoryRequest $request)
     {
         $validated = $request->validated();
-
         $directoryName = $validated['directory_name'];
-
-        // Get the disk instance
         $disk = Storage::disk(config('media.storage_disk'));
 
-        // Check if the directory exists, and create it if not
-        if (!$disk->exists($directoryName)) {
-            $disk->makeDirectory($directoryName, 0777, true);
+        $this->ensureDirectoryExists($disk, $directoryName);
+
+        return Response::success('Directory created successfully', []);
+    }
+
+    /**
+     * Retrieve media based on the provided path.
+     *
+     * @param string $path
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getMediaByPath(string $path)
+    {
+        return empty($path) 
+            ? Media::all() 
+            : Media::where('path', 'LIKE', '%' . $path . '%')->get();
+    }
+
+    /**
+     * Separate media into folders and files based on the current path.
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $media
+     * @param string $path
+     * @return array
+     */
+    private function separateFoldersAndFiles($media, string $path): array
+    {
+        $folders = [];
+        $files = [];
+
+        foreach ($media as $item) {
+            $folderPath = dirname($item->path);
+            $fileName = basename($item->path);
+
+            if ($folderPath === rtrim($path, '/')) {
+                $files[] = [
+                    "path"        => $item->path,
+                    "title"       => $item->title,
+                    "alt"         => $item->alt,
+                    "description" => $item->description,
+                ];
+            } else {
+                $this->addFolder($folders, $folderPath, $path);
+            }
         }
 
-        return Response::success('Directory created successfully',[]);
+        return [$folders, $files];
+    }
+
+    /**
+     * Add folder to the folders array if it is not already present.
+     *
+     * @param array &$folders
+     * @param string $folderPath
+     * @param string $currentPath
+     */
+    private function addFolder(array &$folders, string $folderPath, string $currentPath): void
+    {
+        $relativePath = str_replace($currentPath, '', $folderPath);
+        $folderName = trim(explode('/', $relativePath)[0]);
+
+        if (!empty($folderName) && !in_array($folderName, $folders)) {
+            $folders[] = $folderName;
+        }
+    }
+
+    /**
+     * Ensure that the specified directory exists, creating it if necessary.
+     *
+     * @param \Illuminate\Contracts\Filesystem\Filesystem $disk
+     * @param string $directoryPath
+     */
+    private function ensureDirectoryExists($disk, string $directoryPath): void
+    {
+        if (!$disk->exists($directoryPath)) {
+            $disk->makeDirectory($directoryPath, 0777, true);
+        }
     }
 }

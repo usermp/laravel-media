@@ -25,7 +25,7 @@ class MediaUploadRequest extends FormRequest
     {
         return [
             'media'          => 'required|file|max:' . config("media.max_upload_size"),
-            'directory_name' => 'required|string',
+            'directory_name' => 'nullable|string',
             'title'          => 'nullable|string|max:255',
             'alt'            => 'nullable|string|max:255',
             'description'    => 'nullable|string',
