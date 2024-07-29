@@ -23,6 +23,7 @@ class MediaController extends Controller
         $media = $this->getMediaByPath($path);
 
         // Ensure the path ends with a '/'
+
         $path = rtrim($path, '/') . '/';
 
         [$folders, $files] = $this->separateFoldersAndFiles($media, $path);
@@ -81,8 +82,8 @@ class MediaController extends Controller
      */
     private function getMediaByPath(string $path)
     {
-        return empty($path) 
-            ? Media::all() 
+        return empty($path) || $path == "/"
+            ? Media::all()
             : Media::where('path', 'LIKE', '%' . $path . '%')->get();
     }
 
@@ -101,6 +102,15 @@ class MediaController extends Controller
         foreach ($media as $item) {
             $folderPath = dirname($item->path);
             $fileName = basename($item->path);
+            if($folderPath == ".")
+            {
+                $files[] = [
+                    "path"        => $item->path,
+                    "title"       => $item->title,
+                    "alt"         => $item->alt,
+                    "description" => $item->description,
+                ];
+            }
 
             if ($folderPath === rtrim($path, '/')) {
                 $files[] = [
@@ -110,27 +120,40 @@ class MediaController extends Controller
                     "description" => $item->description,
                 ];
             } else {
-                $this->addFolder($folders, $folderPath, $path);
+
+                if($folderPath != ".")
+                {
+                    $this->addFolder($folders, $folderPath, $path);
+                }
             }
         }
 
         return [$folders, $files];
     }
 
-    /**
-     * Add folder to the folders array if it is not already present.
-     *
-     * @param array &$folders
-     * @param string $folderPath
-     * @param string $currentPath
-     */
     private function addFolder(array &$folders, string $folderPath, string $currentPath): void
     {
-        $relativePath = str_replace($currentPath, '', $folderPath);
-        $folderName = trim(explode('/', $relativePath)[0]);
 
-        if (!empty($folderName) && !in_array($folderName, $folders)) {
-            $folders[] = $folderName;
+        if($currentPath == "/")
+        {
+            $folders[] = (explode("/", $folderPath)[0]);
+            return;
+        }
+        // Remove the current path from the folder path to get the relative path
+        $relativePath = str_replace($currentPath, '', $folderPath);
+
+        // Split the relative path into parts
+        $folderParts = explode('/', $relativePath);
+
+        // Loop through the parts to add each folder to the folders array
+        foreach ($folderParts as $folderName) {
+
+            $folderName = trim($folderName); // Trim whitespace
+
+            // Only add non-empty folder names that are not already in the folders array
+            if (!empty($folderName) && !in_array($folderName, $folders)) {
+                $folders[] = $folderName; // Add the folder name to the folders array
+            }
         }
     }
 
