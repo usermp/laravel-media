@@ -44,7 +44,7 @@ class MediaController extends Controller
         $validated = $request->validated();
         $file = $request->file('media');
         $disk = Storage::disk(config('media.storage_disk'));
-        $directoryPath = $validated['directory_name'];
+        $directoryPath = $validated['directory_name'] ?? "/";
 
         $this->ensureDirectoryExists($disk, $directoryPath);
 
