@@ -24,7 +24,12 @@ class MediaUploadRequest extends FormRequest
     public function rules()
     {
         return [
-            'media'          => 'required|file|max:' . config("media.max_upload_size"),
+            'media' => [
+                'required',
+                'file',
+                'mimes:jpg,jpeg,png,gif,webp,mp4,avi,mkv,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,ppt,pptx,zip',
+                'max:' . config("media.max_upload_size")
+            ],
             'directory_name' => 'nullable|string',
             'title'          => 'nullable|string|max:255',
             'alt'            => 'nullable|string|max:255',
