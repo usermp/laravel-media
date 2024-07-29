@@ -83,8 +83,8 @@ class MediaController extends Controller
      */
     private function fetchMediaFromStorage($disk, string $path): array
     {
-        $mediaItems = $disk->allFiles($path);
-        $directories = $disk->allDirectories($path);
+        $mediaItems = $disk->files($path); // Changed from allFiles to files
+        $directories = $disk->directories($path); // Changed from allDirectories to directories
 
         return [
             'files' => $mediaItems,
@@ -106,15 +106,16 @@ class MediaController extends Controller
 
         foreach ($mediaItems['files'] as $filePath) {
             $relativePath = str_replace($path, '', $filePath);
-            $foldersPath = dirname($relativePath);
-            if ($foldersPath === '.' || $foldersPath === rtrim($path, '/')) {
+            if ($relativePath === basename($relativePath)) {
+                // Only add if it is directly under the current path
                 $files[] = $this->formatFileItem($filePath);
             }
         }
 
         foreach ($mediaItems['folders'] as $folderPath) {
-            if ($folderPath !== $path) {
-                $this->addFolderToCategory($folders, $folderPath, $path);
+            // Only add if it is directly under the current path
+            if (basename($folderPath) !== '') {
+                $folders[] = basename($folderPath);
             }
         }
 
@@ -135,30 +136,6 @@ class MediaController extends Controller
             'alt' => '', // Example placeholder
             'description' => '', // Example placeholder
         ];
-    }
-
-    /**
-     * Add folders to the list of folders based on the path.
-     *
-     * @param array &$folders
-     * @param string $folderPath
-     * @param string $currentPath
-     */
-    private function addFolderToCategory(array &$folders, string $folderPath, string $currentPath): void
-    {
-        if ($currentPath === "/") {
-            $folders[] = explode("/", $folderPath)[0];
-            return;
-        }
-
-        $relativePath = str_replace($currentPath, '', $folderPath);
-        $folderParts = explode('/', trim($relativePath, '/'));
-
-        foreach ($folderParts as $folderName) {
-            if (!empty($folderName) && !in_array($folderName, $folders)) {
-                $folders[] = $folderName;
-            }
-        }
     }
 
     /**
