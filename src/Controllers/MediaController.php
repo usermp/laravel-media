@@ -3,7 +3,6 @@
 namespace Usermp\LaravelMedia\Controllers;
 
 use Illuminate\Routing\Controller;
-use Usermp\LaravelMedia\Models\Media;
 use Illuminate\Support\Facades\Storage;
 use Usermp\LaravelMedia\Services\Response;
 use Usermp\LaravelMedia\Requests\DirectoryRequest;
@@ -20,13 +19,13 @@ class MediaController extends Controller
     public function index()
     {
         $path = request()->query('path', '/');
-        $media = $this->getMediaByPath($path);
+        $disk = Storage::disk(config('media.storage_disk'));
 
         // Ensure the path ends with a '/'
-
         $path = rtrim($path, '/') . '/';
 
-        [$folders, $files] = $this->separateFoldersAndFiles($media, $path);
+        $mediaItems = $this->fetchMediaFromStorage($disk, $path);
+        [$folders, $files] = $this->categorizeMedia($mediaItems, $path);
 
         return Response::success(Constants::SUCCESS, [
             'folders' => array_values(array_unique($folders)),
@@ -37,7 +36,7 @@ class MediaController extends Controller
     /**
      * Handle media upload request.
      *
-     * @param  \Usermp\LaravelMedia\Requests\MediaUploadRequest  $request
+     * @param \Usermp\LaravelMedia\Requests\MediaUploadRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function upload(MediaUploadRequest $request)
@@ -47,20 +46,21 @@ class MediaController extends Controller
         $disk = Storage::disk(config('media.storage_disk'));
         $directoryPath = $validated['directory_name'] ?? "/";
 
-        $this->ensureDirectoryExists($disk, $directoryPath);
+        $this->createDirectoryIfNotExists($disk, $directoryPath);
 
         $path = $file->store($directoryPath, config('media.storage_disk'));
         $validated['path'] = $path;
 
-        $media = Media::create($validated);
-
-        return Response::success(Constants::SUCCESS, $media);
+        return Response::success(Constants::SUCCESS, [
+            'path' => $path,
+            'directory' => $directoryPath,
+        ]);
     }
 
     /**
      * Handle directory creation request.
      *
-     * @param  \Usermp\LaravelMedia\Requests\DirectoryRequest  $request
+     * @param \Usermp\LaravelMedia\Requests\DirectoryRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function directory(DirectoryRequest $request)
@@ -69,90 +69,94 @@ class MediaController extends Controller
         $directoryName = $validated['directory_name'];
         $disk = Storage::disk(config('media.storage_disk'));
 
-        $this->ensureDirectoryExists($disk, $directoryName);
+        $this->createDirectoryIfNotExists($disk, $directoryName);
 
         return Response::success('Directory created successfully', []);
     }
 
     /**
-     * Retrieve media based on the provided path.
+     * Fetch media files and directories from storage based on the provided path.
      *
-     * @param string $path
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    private function getMediaByPath(string $path)
-    {
-        return empty($path) || $path == "/"
-            ? Media::all()
-            : Media::where('path', 'LIKE', '%' . $path . '%')->get();
-    }
-
-    /**
-     * Separate media into folders and files based on the current path.
-     *
-     * @param \Illuminate\Database\Eloquent\Collection $media
+     * @param \Illuminate\Contracts\Filesystem\Filesystem $disk
      * @param string $path
      * @return array
      */
-    private function separateFoldersAndFiles($media, string $path): array
+    private function fetchMediaFromStorage($disk, string $path): array
+    {
+        $mediaItems = $disk->allFiles($path);
+        $directories = $disk->allDirectories($path);
+
+        return [
+            'files' => $mediaItems,
+            'folders' => $directories
+        ];
+    }
+
+    /**
+     * Categorize media items into folders and files based on the current path.
+     *
+     * @param array $mediaItems
+     * @param string $path
+     * @return array
+     */
+    private function categorizeMedia(array $mediaItems, string $path): array
     {
         $folders = [];
         $files = [];
 
-        foreach ($media as $item) {
-            $folderPath = dirname($item->path);
-            $fileName = basename($item->path);
-            if($folderPath == ".")
-            {
-                $files[] = [
-                    "path"        => $item->path,
-                    "title"       => $item->title,
-                    "alt"         => $item->alt,
-                    "description" => $item->description,
-                ];
+        foreach ($mediaItems['files'] as $filePath) {
+            $relativePath = str_replace($path, '', $filePath);
+            $foldersPath = dirname($relativePath);
+            if ($foldersPath === '.' || $foldersPath === rtrim($path, '/')) {
+                $files[] = $this->formatFileItem($filePath);
             }
+        }
 
-            if ($folderPath === rtrim($path, '/')) {
-                $files[] = [
-                    "path"        => $item->path,
-                    "title"       => $item->title,
-                    "alt"         => $item->alt,
-                    "description" => $item->description,
-                ];
-            } else {
-
-                if($folderPath != ".")
-                {
-                    $this->addFolder($folders, $folderPath, $path);
-                }
+        foreach ($mediaItems['folders'] as $folderPath) {
+            if ($folderPath !== $path) {
+                $this->addFolderToCategory($folders, $folderPath, $path);
             }
         }
 
         return [$folders, $files];
     }
 
-    private function addFolder(array &$folders, string $folderPath, string $currentPath): void
+    /**
+     * Format a file item for response.
+     *
+     * @param string $filePath
+     * @return array
+     */
+    private function formatFileItem(string $filePath): array
     {
+        return [
+            'path' => $filePath,
+            'title' => basename($filePath),
+            'alt' => '', // Example placeholder
+            'description' => '', // Example placeholder
+        ];
+    }
 
-        if($currentPath == "/")
-        {
-            $folders[] = (explode("/", $folderPath)[0]);
+    /**
+     * Add folders to the list of folders based on the path.
+     *
+     * @param array &$folders
+     * @param string $folderPath
+     * @param string $currentPath
+     */
+    private function addFolderToCategory(array &$folders, string $folderPath, string $currentPath): void
+    {
+        if ($currentPath === "/") {
+            $folders[] = explode("/", $folderPath)[0];
             return;
         }
-        // Remove the current path from the folder path to get the relative path
+
         $relativePath = str_replace($currentPath, '', $folderPath);
+        $folderParts = explode('/', trim($relativePath, '/'));
 
-        // Split the relative path into parts
-        $folderParts = explode('/', $relativePath);
-
-        // Loop through the parts to add each folder to the folders array
         foreach ($folderParts as $folderName) {
-
-            $folderName = trim($folderName); // Trim whitespace
-
-            // Only add non-empty folder names that are not already in the folders array
             if (!empty($folderName) && !in_array($folderName, $folders)) {
-                $folders[] = $folderName; // Add the folder name to the folders array
+                $folders[] = $folderName;
             }
         }
     }
@@ -163,7 +167,7 @@ class MediaController extends Controller
      * @param \Illuminate\Contracts\Filesystem\Filesystem $disk
      * @param string $directoryPath
      */
-    private function ensureDirectoryExists($disk, string $directoryPath): void
+    private function createDirectoryIfNotExists($disk, string $directoryPath): void
     {
         if (!$disk->exists($directoryPath)) {
             $disk->makeDirectory($directoryPath, 0777, true);
