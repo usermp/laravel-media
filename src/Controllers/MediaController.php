@@ -49,13 +49,15 @@ class MediaController extends Controller
 
         $this->createDirectoryIfNotExists($disk, $directoryPath);
 
-        $path = $file->store($directoryPath, config('media.storage_disk'));
+        $filename = substr(date("Y"), 2, 4) . date("s") . date("i") . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 4) . date("Hdm");
+        $extension = $file->getClientOriginalExtension(); 
+        $uniqueFilename = $filename . '.' . $extension;  
+
+        $path = $file->storeAs($directoryPath, $uniqueFilename, config('media.storage_disk'));
         $validated['path'] = $path;
         
         unset($validated['media']);
-        Media::create(
-            $validated
-        );
+        Media::create($validated);
 
         return Response::success(Constants::SUCCESS, [
             'path' => $path,
