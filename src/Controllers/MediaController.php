@@ -51,10 +51,11 @@ class MediaController extends Controller
 
         $path = $file->store($directoryPath, config('media.storage_disk'));
         $validated['path'] = $path;
-
-        Media::create([
+        
+        unset($validated['media']);
+        Media::create(
             $validated
-        ]);
+        );
 
         return Response::success(Constants::SUCCESS, [
             'path' => $path,
