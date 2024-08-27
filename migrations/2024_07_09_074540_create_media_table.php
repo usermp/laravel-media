@@ -14,6 +14,7 @@ class CreatemediaTable extends Migration
             $table->string('alt')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->text('description')->nullable();
+            $table->string('option')->nullable();
             $table->string('path');
             $table->timestamps();
             $table->softDeletes();

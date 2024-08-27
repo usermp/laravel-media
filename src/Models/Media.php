@@ -24,6 +24,7 @@ class Media extends Model
         'user_id',
         'description',
         'path',
+        'option'
     ];
 
     /**

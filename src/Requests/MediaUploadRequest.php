@@ -34,6 +34,7 @@ class MediaUploadRequest extends FormRequest
             'title'          => 'nullable|string|max:255',
             'alt'            => 'nullable|string|max:255',
             'description'    => 'nullable|string',
+            'option'         => 'nullable|string',
         ];
     }
 }
