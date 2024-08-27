@@ -3,11 +3,12 @@
 namespace Usermp\LaravelMedia\Controllers;
 
 use Illuminate\Routing\Controller;
+use Usermp\LaravelMedia\Models\Media;
 use Illuminate\Support\Facades\Storage;
 use Usermp\LaravelMedia\Services\Response;
+use Usermp\LaravelMedia\Services\Constants;
 use Usermp\LaravelMedia\Requests\DirectoryRequest;
 use Usermp\LaravelMedia\Requests\MediaUploadRequest;
-use Usermp\LaravelMedia\Services\Constants;
 
 class MediaController extends Controller
 {
@@ -50,6 +51,10 @@ class MediaController extends Controller
 
         $path = $file->store($directoryPath, config('media.storage_disk'));
         $validated['path'] = $path;
+
+        Media::create([
+            $validated
+        ]);
 
         return Response::success(Constants::SUCCESS, [
             'path' => $path,
