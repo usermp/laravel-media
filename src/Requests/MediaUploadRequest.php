@@ -27,7 +27,7 @@ class MediaUploadRequest extends FormRequest
             'media' => [
                 'required',
                 'file',
-                'mimes:jpg,jpeg,png,gif,webp,mp4,avi,mkv,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,svg',,
+                'mimes:jpg,jpeg,png,gif,webp,mp4,avi,mkv,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,svg',
                 'max:' . config("media.max_upload_size")
             ],
             'directory_name' => 'nullable|string',
